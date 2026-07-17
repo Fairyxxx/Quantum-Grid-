@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quantum Grid — QR Code Generator</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js" defer></script>
+<script src="script.js" defer></script>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<header class="header">
+  <a class="header-brand" href="#">
+    <div class="icon">⊞</div>
+    Quantum Grid
+  </a>
+  <nav class="header-links">
+    <a href="#">v1.0.0</a>
+    <a href="#">GitHub</a>
+    <a href="#">Docs</a>
+  </nav>
+</header>
+
+<div class="main-wrap">
+
+  <!-- README Panel -->
+  <aside class="readme-panel">
+    <h1><span>Quantum Grid</span></h1>
+
+    <div class="badges">
+      <span class="badge accent">v1.0.0</span>
+      <span class="badge purple">MIT License</span>
+      <span class="badge">纯前端</span>
+      <span class="badge">零依赖构建</span>
+    </div>
+
+    <p>高性能浏览器端二维码生成器。基于 Canvas API 实时渲染，支持多级纠错、PNG 下载与剪贴板复制。粒子背景动画，终端美学设计。</p>
+
+    <h2>功能特性</h2>
+    <ul>
+      <li>实时生成，输入即所得</li>
+      <li>四级纠错可选（L / M / Q / H）</li>
+      <li>一键下载 PNG（240×240）</li>
+      <li>一键复制到剪贴板</li>
+      <li>暗色终端工业美学</li>
+      <li>粒子动态背景</li>
+      <li>响应式布局，移动端适配</li>
+    </ul>
+
+    <h2>快速开始</h2>
+    <p>直接在浏览器中打开 <code>index.html</code>：</p>
+    <pre><code>git clone https://github.com/example/quantum-grid
+cd quantum-grid
+open index.html</code></pre>
+    <p>或在输入框中键入文本 / URL，二维码即时生成。</p>
+
+    <h2>技术栈</h2>
+    <ul>
+      <li><code>qrcode</code> — 轻量 QR 生成库</li>
+      <li>Canvas API — 高速位图渲染</li>
+      <li>纯 CSS 动画与粒子系统</li>
+      <li>Clipboard API — 剪贴板写入</li>
+    </ul>
+
+    <h2>参数说明</h2>
+    <p><strong>纠错级别</strong>：L ≈ 7% / M ≈ 15% / Q ≈ 25% / H ≈ 30% 容损率。级别越高，二维码越密集，但抗损坏能力越强。默认推荐 <code>H</code>。</p>
+  </aside>
+
+  <!-- Generator Panel -->
+  <main class="generator-panel">
+    <div class="input-group">
+      <label>输入文本或 URL</label>
+      <div class="input-wrapper">
+        <span class="prefix">$</span>
+        <input id="qr-input" type="text" placeholder="输入内容..." autofocus>
+      </div>
+    </div>
+
+    <div class="qr-stage" id="qr-stage">
+      <div class="qr-placeholder">
+        <div class="qr-icon">⊞</div>
+        <span>输入内容生成二维码</span>
+      </div>
+    </div>
+
+    <div class="options-row">
+      <button class="option-btn active" data-level="H">纠错-H</button>
+      <button class="option-btn" data-level="Q">纠错-Q</button>
+      <button class="option-btn" data-level="M">纠错-M</button>
+      <button class="option-btn" data-level="L">纠错-L</button>
+      <button class="option-btn download" id="download-btn" style="opacity:0.4;pointer-events:none">下载 PNG</button>
+      <button class="option-btn copy-btn" id="copy-btn" style="opacity:0.4;pointer-events:none">复制图片</button>
+    </div>
+
+    <div class="meta-bar">
+      <span><span class="dot on"></span> 就绪</span>
+      <span>尺寸 <span class="value" id="size-value">240×240</span></span>
+      <span>纠错 <span class="value" id="level-value">H</span></span>
+      <span>字符 <span class="value" id="char-count">0</span></span>
+    </div>
+  </main>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+</body>
+</html>
