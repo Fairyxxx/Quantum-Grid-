@@ -1,207 +1,335 @@
-// ── Canvas Background ──
-const canvas = document.getElementById('bg-canvas');
-const ctx = canvas.getContext('2d');
-let particles = [];
-let mouse = { x: -1000, y: -1000 };
+/* ============================================
+   QR Forge — 二维码生成器
+   Canvas 粒子背景 & 二维码实时生成
+   ============================================ */
 
-function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-resizeCanvas();
-window.addEventListener('resize', resizeCanvas);
+// ── Particle Canvas ──────────────────────────
+(function initParticles() {
+  const canvas = document.getElementById('particleCanvas');
+  const ctx = canvas.getContext('2d');
 
-document.addEventListener('mousemove', e => {
-  mouse.x = e.clientX;
-  mouse.y = e.clientY;
-});
+  let width, height;
+  const particles = [];
+  const PARTICLE_COUNT = 80;
+  const CONNECT_DIST = 140;
+  const MOUSE_RADIUS = 160;
 
-class Particle {
-  constructor() {
-    this.reset();
+  const mouse = { x: -9999, y: -9999 };
+
+  function resize() {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
   }
-  reset() {
-    this.x = Math.random() * canvas.width;
-    this.y = Math.random() * canvas.height;
-    this.vx = (Math.random() - 0.5) * 0.4;
-    this.vy = (Math.random() - 0.5) * 0.4;
-    this.size = Math.random() * 1.5 + 0.5;
-    this.opacity = Math.random() * 0.5 + 0.15;
-    this.hue = Math.random() < 0.5 ? 186 : 262; // cyan or purple
-  }
-  update() {
-    this.x += this.vx;
-    this.y += this.vy;
 
-    const dx = this.x - mouse.x;
-    const dy = this.y - mouse.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist < 180) {
-      const force = (180 - dist) / 180;
-      this.vx += (dx / dist) * force * 0.03;
-      this.vy += (dy / dist) * force * 0.03;
-    }
+  resize();
+  window.addEventListener('resize', resize);
 
-    this.vx *= 0.999;
-    this.vy *= 0.999;
+  document.addEventListener('mousemove', (e) => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+  });
 
-    if (this.x < -20 || this.x > canvas.width + 20 || this.y < -20 || this.y > canvas.height + 20) {
+  document.addEventListener('mouseleave', () => {
+    mouse.x = -9999;
+    mouse.y = -9999;
+  });
+
+  // Touch support
+  document.addEventListener('touchmove', (e) => {
+    mouse.x = e.touches[0].clientX;
+    mouse.y = e.touches[0].clientY;
+  }, { passive: true });
+
+  document.addEventListener('touchend', () => {
+    mouse.x = -9999;
+    mouse.y = -9999;
+  });
+
+  class Particle {
+    constructor() {
       this.reset();
     }
-  }
-  draw(ctx) {
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    const color = this.hue === 186
-      ? `rgba(0,229,255,${this.opacity})`
-      : `rgba(124,77,255,${this.opacity})`;
-    ctx.fillStyle = color;
-    ctx.fill();
-  }
-}
 
-for (let i = 0; i < 80; i++) {
-  particles.push(new Particle());
-}
+    reset() {
+      this.x = Math.random() * width;
+      this.y = Math.random() * height;
+      this.vx = (Math.random() - 0.5) * 0.45;
+      this.vy = (Math.random() - 0.5) * 0.45;
+      this.radius = Math.random() * 2 + 0.8;
+      this.alpha = Math.random() * 0.5 + 0.2;
+    }
 
-// Draw connections
-function drawConnections(ctx, particles) {
-  for (let i = 0; i < particles.length; i++) {
-    for (let j = i + 1; j < particles.length; j++) {
-      const dx = particles[i].x - particles[j].x;
-      const dy = particles[i].y - particles[j].y;
+    update() {
+      // Mouse repulsion / attraction
+      const dx = this.x - mouse.x;
+      const dy = this.y - mouse.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 100) {
-        ctx.beginPath();
-        ctx.moveTo(particles[i].x, particles[i].y);
-        ctx.lineTo(particles[j].x, particles[j].y);
-        ctx.strokeStyle = `rgba(0,229,255,${0.06 * (1 - dist/100)})`;
-        ctx.lineWidth = 0.5;
-        ctx.stroke();
+
+      if (dist < MOUSE_RADIUS && dist > 0) {
+        const force = (MOUSE_RADIUS - dist) / MOUSE_RADIUS;
+        const angle = Math.atan2(dy, dx);
+        this.vx += Math.cos(angle) * force * 0.03;
+        this.vy += Math.sin(angle) * force * 0.03;
+      }
+
+      // Damping
+      this.vx *= 0.998;
+      this.vy *= 0.998;
+
+      this.x += this.vx;
+      this.y += this.vy;
+
+      // Wrap around
+      if (this.x < -20) this.x = width + 20;
+      if (this.x > width + 20) this.x = -20;
+      if (this.y < -20) this.y = height + 20;
+      if (this.y > height + 20) this.y = -20;
+    }
+
+    draw(ctx) {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      ctx.fillStyle = `hsla(250, 30%, 70%, ${this.alpha})`;
+      ctx.fill();
+    }
+  }
+
+  // Initialize particles
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    particles.push(new Particle());
+  }
+
+  function drawConnections() {
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < CONNECT_DIST) {
+          const opacity = (1 - dist / CONNECT_DIST) * 0.12;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = `hsla(250, 50%, 65%, ${opacity})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
       }
     }
   }
-}
 
-function animate() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  for (const p of particles) {
-    p.update();
-    p.draw(ctx);
-  }
-  drawConnections(ctx, particles);
-  requestAnimationFrame(animate);
-}
-animate();
+  function animate() {
+    ctx.clearRect(0, 0, width, height);
 
-// ── QR Code Generator ──
-const qrStage = document.getElementById('qr-stage');
-const qrInput = document.getElementById('qr-input');
-const downloadBtn = document.getElementById('download-btn');
-const copyBtn = document.getElementById('copy-btn');
-const levelBtns = document.querySelectorAll('[data-level]');
-const sizeValue = document.getElementById('size-value');
-const levelValue = document.getElementById('level-value');
-const charCount = document.getElementById('char-count');
-const toast = document.getElementById('toast');
+    // Update & draw
+    particles.forEach((p) => {
+      p.update();
+      p.draw(ctx);
+    });
 
-let currentLevel = 'H';
-let qrDataUrl = '';
-let qrCanvas = null;
+    drawConnections();
 
-function showToast(msg) {
-  toast.textContent = msg;
-  toast.classList.add('show');
-  clearTimeout(toast._timeout);
-  toast._timeout = setTimeout(() => toast.classList.remove('show'), 2000);
-}
-
-function generateQR() {
-  const text = qrInput.value.trim();
-  if (!text) {
-    qrStage.innerHTML = `
-      <div class="qr-placeholder">
-        <div class="qr-icon">⊞</div>
-        <span>输入内容生成二维码</span>
-      </div>`;
-    qrDataUrl = '';
-    qrCanvas = null;
-    charCount.textContent = '0';
-    downloadBtn.style.opacity = '0.4';
-    downloadBtn.style.pointerEvents = 'none';
-    copyBtn.style.opacity = '0.4';
-    copyBtn.style.pointerEvents = 'none';
-    return;
+    requestAnimationFrame(animate);
   }
 
-  charCount.textContent = text.length;
+  animate();
+})();
 
-  QRCode.toDataURL(text, {
-    width: 240,
-    margin: 2,
-    color: { dark: '#0a0e14', light: '#ffffff' },
-    errorCorrectionLevel: currentLevel
-  }, (err, url) => {
-    if (err) return;
-    qrDataUrl = url;
-    downloadBtn.style.opacity = '1';
-    downloadBtn.style.pointerEvents = 'auto';
-    copyBtn.style.opacity = '1';
-    copyBtn.style.pointerEvents = 'auto';
+// ── QR Code Generator ────────────────────────
+(function initQRGenerator() {
+  const textInput = document.getElementById('textInput');
+  const clearBtn = document.getElementById('clearBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const copyBtn = document.getElementById('copyBtn');
+  const qrContainer = document.getElementById('qrcode');
+  const qrPlaceholder = document.getElementById('qrPlaceholder');
+  const qrWrapper = document.getElementById('qrWrapper');
+  const charCount = document.getElementById('charCount');
+  const ecSelect = document.getElementById('ecSelect');
+  const ecLevel = document.getElementById('ecLevel');
+  const toast = document.getElementById('toast');
 
-    const img = new Image();
-    img.onload = () => {
-      qrCanvas = document.createElement('canvas');
-      qrCanvas.width = img.width;
-      qrCanvas.height = img.height;
-      const ctx2 = qrCanvas.getContext('2d');
-      ctx2.drawImage(img, 0, 0);
-      qrStage.innerHTML = '';
-      qrStage.appendChild(qrCanvas);
-    };
-    img.src = url;
-  });
-}
+  let qrInstance = null;
+  let debounceTimer = null;
 
-qrInput.addEventListener('input', generateQR);
+  const LEVEL_MAP = {
+    L: QRCode.CorrectLevel.L,
+    M: QRCode.CorrectLevel.M,
+    Q: QRCode.CorrectLevel.Q,
+    H: QRCode.CorrectLevel.H,
+  };
 
-levelBtns.forEach(btn => {
-  btn.addEventListener('click', () => {
-    levelBtns.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentLevel = btn.dataset.level;
-    levelValue.textContent = currentLevel;
-    generateQR();
-  });
-});
+  function updateCharCount() {
+    const len = textInput.value.length;
+    charCount.textContent = len;
+  }
 
-downloadBtn.addEventListener('click', () => {
-  if (!qrDataUrl) return;
-  const a = document.createElement('a');
-  a.href = qrDataUrl;
-  a.download = `qrcode-${Date.now()}.png`;
-  a.click();
-  showToast('PNG 已下载');
-});
+  function generateQR(text) {
+    // Clear previous
+    qrContainer.innerHTML = '';
 
-copyBtn.addEventListener('click', async () => {
-  if (!qrCanvas) return;
-  try {
-    const blob = await new Promise(resolve => qrCanvas.toBlob(resolve, 'image/png'));
-    await navigator.clipboard.write([
-      new ClipboardItem({ 'image/png': blob })
-    ]);
-    showToast('二维码已复制到剪贴板');
-  } catch (e) {
-    // Fallback: copy as data URL
-    try {
-      await navigator.clipboard.writeText(qrDataUrl);
-      showToast('已复制（base64）');
-    } catch {
-      showToast('复制失败，请使用下载功能');
+    if (!text.trim()) {
+      qrPlaceholder.classList.remove('hidden');
+      qrWrapper.classList.remove('has-qr');
+      downloadBtn.disabled = true;
+      copyBtn.disabled = true;
+      qrInstance = null;
+      updateCharCount();
+      return;
     }
-  }
-});
 
-// ── Init ──
-generateQR();
+    qrPlaceholder.classList.add('hidden');
+    qrWrapper.classList.add('has-qr');
+
+    try {
+      const level = ecSelect.value;
+      ecLevel.textContent = level;
+
+      qrInstance = new QRCode(qrContainer, {
+        text: text,
+        width: 228,
+        height: 228,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: LEVEL_MAP[level],
+      });
+
+      downloadBtn.disabled = false;
+      copyBtn.disabled = false;
+    } catch (err) {
+      console.error('QR generation error:', err);
+      qrPlaceholder.classList.remove('hidden');
+      qrWrapper.classList.remove('has-qr');
+      downloadBtn.disabled = true;
+      copyBtn.disabled = true;
+    }
+
+    updateCharCount();
+  }
+
+  // Debounced input
+  textInput.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      generateQR(textInput.value);
+    }, 150);
+
+    // Update clear button visibility
+    if (textInput.value.length > 0) {
+      clearBtn.classList.add('visible');
+    } else {
+      clearBtn.classList.remove('visible');
+    }
+
+    updateCharCount();
+  });
+
+  // Clear button
+  clearBtn.addEventListener('click', () => {
+    textInput.value = '';
+    textInput.focus();
+    clearBtn.classList.remove('visible');
+    generateQR('');
+  });
+
+  // Error correction level change
+  ecSelect.addEventListener('change', () => {
+    generateQR(textInput.value);
+  });
+
+  // ── Download PNG ──────────────────────────
+  downloadBtn.addEventListener('click', () => {
+    if (!qrInstance) return;
+
+    const canvas = qrContainer.querySelector('canvas');
+    if (!canvas) {
+      // Fallback: try img
+      const img = qrContainer.querySelector('img');
+      if (!img) return;
+      downloadImage(img.src);
+      return;
+    }
+
+    // Create a high-res export canvas
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = 600;
+    exportCanvas.height = 600;
+    const exportCtx = exportCanvas.getContext('2d');
+
+    // White background
+    exportCtx.fillStyle = '#ffffff';
+    exportCtx.fillRect(0, 0, 600, 600);
+
+    // Draw QR scaled up
+    exportCtx.imageSmoothingEnabled = false;
+    exportCtx.drawImage(canvas, 0, 0, 600, 600);
+
+    exportCanvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      downloadImage(url);
+      URL.revokeObjectURL(url);
+    }, 'image/png');
+  });
+
+  function downloadImage(url) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `qr-code-${Date.now()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast('PNG 已下载', 'success');
+  }
+
+  // ── Copy to Clipboard ─────────────────────
+  copyBtn.addEventListener('click', async () => {
+    if (!qrInstance) return;
+
+    const canvas = qrContainer.querySelector('canvas');
+    if (!canvas) {
+      showToast('无法读取二维码图像', 'error');
+      return;
+    }
+
+    try {
+      // Use Clipboard API with PNG blob
+      const blob = await new Promise((resolve) => {
+        canvas.toBlob(resolve, 'image/png');
+      });
+
+      if (!blob) {
+        showToast('图像生成失败', 'error');
+        return;
+      }
+
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': blob }),
+      ]);
+
+      showToast('已复制到剪贴板', 'success');
+    } catch (err) {
+      console.error('Clipboard write error:', err);
+      // Fallback message
+      showToast('复制失败，请尝试下载', 'error');
+    }
+  });
+
+  // ── Toast Notification ────────────────────
+  let toastTimer = null;
+
+  function showToast(message, type) {
+    if (toastTimer) clearTimeout(toastTimer);
+
+    toast.textContent = message;
+    toast.className = `toast ${type} show`;
+
+    toastTimer = setTimeout(() => {
+      toast.classList.remove('show');
+      toastTimer = null;
+    }, 2200);
+  }
+
+  // ── Init ──────────────────────────────────
+  updateCharCount();
+})();
