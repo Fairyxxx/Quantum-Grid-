@@ -1,13 +1,4 @@
----
-AIGC:
-    Label: "1"
-    ContentProducer: 001191440300708461136T1XGW3
-    ProduceID: e066e2c279c31e9848da59eaf3379606_0863419d81c911f18a64525400826444
-    ReservedCode1: m5Ncj8yhrga1Wr/W2bP+tkfno0Jds9uhfdK9NEImGFEHuFiRTavO7xZe1ThSSitNTFTh0PsnJA5QEk5hii473qzbTvfmraK7L6pCzwN3OJrPB6sPqjehK98+2VRJhZlYbmwGUPut7/h8ubfVDiFJVNj3CaMXMfYGV6uc+aWHzal7lA6SKfsTEyBNUbY=
-    ContentPropagator: 001191440300708461136T1XGW3
-    PropagateID: e066e2c279c31e9848da59eaf3379606_0863419d81c911f18a64525400826444
-    ReservedCode2: m5Ncj8yhrga1Wr/W2bP+tkfno0Jds9uhfdK9NEImGFEHuFiRTavO7xZe1ThSSitNTFTh0PsnJA5QEk5hii473qzbTvfmraK7L6pCzwN3OJrPB6sPqjehK98+2VRJhZlYbmwGUPut7/h8ubfVDiFJVNj3CaMXMfYGV6uc+aWHzal7lA6SKfsTEyBNUbY=
----
+
 
 # Quantum Grid
 
@@ -35,7 +26,7 @@ AIGC:
 ## 快速开始
 
 ```bash
-git clone https://github.com/example/quantum-grid.git
+https://github.com/Fairyxxx/Quantum-Grid-.git
 cd quantum-grid
 open index.html
 ```
@@ -87,4 +78,4 @@ quantum-grid/
 ## License
 
 MIT © 2026
-*（内容由AI生成，仅供参考）*
+
